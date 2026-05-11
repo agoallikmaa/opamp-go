@@ -26,7 +26,7 @@ type StartSettings struct {
 	// Optional TLS config for HTTP connection.
 	TLSConfig *tls.Config
 
-	// Optional timeout for each HTTP request performed by the plain HTTP transport.
+	// Optional timeout for each request performed by the HTTP transport.
 	// If zero, no request timeout is set.
 	HTTPRequestTimeout time.Duration
 
