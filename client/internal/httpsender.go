@@ -115,6 +115,12 @@ func (h *HTTPSender) SetProxy(proxy string, headers http.Header) error {
 	return nil
 }
 
+// SetRequestTimeout sets the timeout for individual HTTP requests made by the sender.
+// It should only be called before Run is called.
+func (h *HTTPSender) SetRequestTimeout(timeout time.Duration) {
+	h.client.Timeout = timeout
+}
+
 // Run starts the processing loop that will perform the HTTP request/response.
 // When there are no more messages to send Run will suspend until either there is
 // a new message to send or the polling interval elapses.

@@ -230,6 +230,57 @@ func TestHTTPClientStartWithZeroHeartbeatInterval(t *testing.T) {
 	srv.Close()
 }
 
+func TestHTTPClientStartWithRequestTimeout(t *testing.T) {
+	srv := internal.StartMockServer(t)
+	defer srv.Close()
+
+	requestStarted := make(chan struct{})
+	releaseRequest := make(chan struct{})
+	connectFailed := make(chan error, 1)
+	var requestStartedClosed atomic.Bool
+
+	srv.OnRequest = func(w http.ResponseWriter, r *http.Request) {
+		if requestStartedClosed.CompareAndSwap(false, true) {
+			close(requestStarted)
+		}
+		<-releaseRequest
+	}
+
+	settings := types.StartSettings{
+		OpAMPServerURL:     "http://" + srv.Endpoint,
+		HTTPRequestTimeout: 100 * time.Millisecond,
+		Callbacks: types.Callbacks{
+			OnConnectFailed: func(ctx context.Context, err error) {
+				select {
+				case connectFailed <- err:
+				default:
+				}
+			},
+		},
+	}
+	client := NewHTTP(nil)
+	prepareClient(t, &settings, client)
+
+	require.NoError(t, client.Start(context.Background(), settings))
+	defer func() {
+		assert.NoError(t, client.Stop(context.Background()))
+	}()
+	defer close(releaseRequest)
+
+	select {
+	case <-requestStarted:
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for HTTP request")
+	}
+
+	select {
+	case err := <-connectFailed:
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for connect failure")
+	}
+}
+
 func mockRedirectHTTP(t testing.TB, viaLen int, err error) *checkRedirectMock {
 	m := &checkRedirectMock{
 		t:      t,

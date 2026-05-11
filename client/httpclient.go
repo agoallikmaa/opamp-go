@@ -51,6 +51,10 @@ func (c *httpClient) Start(ctx context.Context, settings types.StartSettings) er
 	// Add TLS configuration into httpClient
 	c.sender.AddTLSConfig(settings.TLSConfig)
 
+	if settings.HTTPRequestTimeout > 0 {
+		c.sender.SetRequestTimeout(settings.HTTPRequestTimeout)
+	}
+
 	if settings.EnableCompression {
 		c.sender.EnableCompression()
 	}

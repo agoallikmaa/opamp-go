@@ -26,6 +26,10 @@ type StartSettings struct {
 	// Optional TLS config for HTTP connection.
 	TLSConfig *tls.Config
 
+	// Optional timeout for each HTTP request performed by the plain HTTP transport.
+	// If zero, no request timeout is set.
+	HTTPRequestTimeout time.Duration
+
 	// Optional Proxy configuration
 	// The ProxyURL may be http(s) or socks5; if no schema is specified http is assumed.
 	ProxyURL string
