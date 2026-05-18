@@ -23,6 +23,12 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
+func newTestHTTPSender() *HTTPSender {
+	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender.SetHTTPClient(&http.Client{})
+	return sender
+}
+
 func TestHTTPSenderRetryForStatusTooManyRequests(t *testing.T) {
 	var connectionAttempts int64
 	srv := StartMockServer(t)
@@ -38,7 +44,7 @@ func TestHTTPSenderRetryForStatusTooManyRequests(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	url := "http://" + srv.Endpoint
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 	sender.NextMessage().Update(func(msg *protobufs.AgentToServer) {
 		msg.AgentDescription = &protobufs.AgentDescription{
 			IdentifyingAttributes: []*protobufs.KeyValue{{
@@ -66,7 +72,7 @@ func TestHTTPSenderRetryForStatusTooManyRequests(t *testing.T) {
 }
 
 func TestHTTPSenderSetHeartbeatInterval(t *testing.T) {
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 
 	// Default interval should be 30s as per OpAMP Specification
 	assert.Equal(t, (30 * time.Second).Milliseconds(), sender.pollingIntervalMs.Load())
@@ -169,7 +175,7 @@ func TestAddTLSConfig(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			sender := NewHTTPSender(&sharedinternal.NopLogger{})
+			sender := newTestHTTPSender()
 			sender.client.Transport = tc.existingTransport
 
 			sender.AddTLSConfig(tc.tlsConfig)
@@ -233,7 +239,7 @@ func TestHTTPSenderRetryForFailedRequests(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	url := "http://" + address
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 	sender.NextMessage().Update(func(msg *protobufs.AgentToServer) {
 		msg.AgentDescription = &protobufs.AgentDescription{
 			IdentifyingAttributes: []*protobufs.KeyValue{{
@@ -277,7 +283,7 @@ func TestHTTPSenderRetryForFailedRequests(t *testing.T) {
 func TestRequestInstanceUidFlagReset(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 	sender.callbacks = types.Callbacks{}
 	sender.callbacks.SetDefaults()
 
@@ -315,7 +321,7 @@ func TestRequestInstanceUidFlagReset(t *testing.T) {
 func TestPackageUpdatesInParallel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	localPackageState := NewInMemPackagesStore()
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 	blockSyncCh := make(chan struct{})
 	doneCh := make([]<-chan struct{}, 0)
 
@@ -399,7 +405,7 @@ func TestPackageUpdatesInParallel(t *testing.T) {
 
 func TestPackageUpdatesWithError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 
 	// We'll pass in a nil PackageStateProvider to force the Sync call to return with an error.
 	localPackageState := types.PackagesStateProvider(nil)
@@ -469,7 +475,7 @@ func TestHTTPSenderSetProxy(t *testing.T) {
 	}}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			sender := NewHTTPSender(&sharedinternal.NopLogger{})
+			sender := newTestHTTPSender()
 			err := sender.SetProxy(tc.url, nil)
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err)
@@ -552,7 +558,7 @@ func TestHTTPSenderSetProxy(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		}
 
-		sender := NewHTTPSender(&sharedinternal.NopLogger{})
+		sender := newTestHTTPSender()
 		sender.client = proxyServer.Client()
 		err := sender.SetProxy(proxyServer.URL, http.Header{"test-header": []string{"test-value"}})
 		assert.NoError(t, err)
@@ -696,7 +702,7 @@ func (b *closeTrackingBodyWrapper) Close() error {
 
 // setupTestSender creates a test HTTPSender with a standard message.
 func setupTestSender(_ *testing.T, url string) *HTTPSender {
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 	sender.NextMessage().Update(func(msg *protobufs.AgentToServer) {
 		msg.AgentDescription = &protobufs.AgentDescription{
 			IdentifyingAttributes: []*protobufs.KeyValue{{
@@ -724,7 +730,7 @@ func TestHTTPSenderOpAMPInstanceUIDHeader(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}
 	url := "http://" + srv.Endpoint
-	sender := NewHTTPSender(&sharedinternal.NopLogger{})
+	sender := newTestHTTPSender()
 
 	// Make sure requests contain the Instance UID. Header value will be populated
 	// from the msg.InstanceUid field.
