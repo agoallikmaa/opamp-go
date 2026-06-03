@@ -28,12 +28,18 @@ type StartSettings struct {
 	HeaderFunc func(http.Header) http.Header
 
 	// Optional TLS config for HTTP connection.
+	//
+	// Deprecated for HTTP transport: configure TLS on Client instead.
 	TLSConfig *tls.Config
 
 	// Optional Proxy configuration
 	// The ProxyURL may be http(s) or socks5; if no schema is specified http is assumed.
+	//
+	// Deprecated for HTTP transport: configure the proxy on Client instead.
 	ProxyURL string
 	// ProxyHeaders gives the headers an HTTP client will present on a proxy CONNECT request.
+	//
+	// Deprecated for HTTP transport: configure proxy headers on Client instead.
 	ProxyHeaders http.Header
 
 	// Agent information.
