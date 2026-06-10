@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opamp-go/client/internal/utils"
 	"github.com/open-telemetry/opamp-go/client/types"
 	sharedinternal "github.com/open-telemetry/opamp-go/internal"
 	"github.com/open-telemetry/opamp-go/internal/testhelpers"
@@ -25,7 +26,7 @@ import (
 
 func newTestHTTPSender() *HTTPSender {
 	sender := NewHTTPSender(&sharedinternal.NopLogger{})
-	sender.SetHTTPClient(&http.Client{})
+	sender.SetHTTPClient(utils.NewHttpClient())
 	return sender
 }
 
